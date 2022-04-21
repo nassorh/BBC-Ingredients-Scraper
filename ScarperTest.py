@@ -5,6 +5,8 @@ from URL import URL
 from Scarper import BCCScraper
 from Exceptions import *
 import numpy as np
+from main import create_url_object
+import filecmp
 
 class ScraperTest(unittest.TestCase):
     @classmethod
@@ -72,6 +74,17 @@ class ScraperTest(unittest.TestCase):
         
         self.assertEqual("dairy-free, egg-free, healthy, nut-free, pregnancy-friendly, vegan, vegetarian",self.scarper.get_diet(reactInitialState))
 
+    def test_scraper(self):
+        print("Scraper Test")
+        urlArr = ["https://www.bbc.co.uk/food/recipes/avocado_pasta_with_peas_31700","https://www.bbc.co.uk/food/recipes/paneerwithspinach_86756","https://www.bbc.co.uk/food/recipes/crab_linguine_22025","https://www.bbc.co.uk/food/recipes/upside-down_pineapple_63080","https://www.bbc.co.uk/food/recipes/roasted_figs_wrapped_in_44423","https://www.bbc.co.uk/food/recipes/aged_sirloin_steak_with_62354"]
+        
+        url_obj_array = []
+        for url in urlArr:
+            url_obj = create_url_object(url)
+            url_obj_array.append(url_obj)
+
+        BCCScraper.create_excel_urlArray(url_obj_array)
+        self.assertTrue(filecmp.cmp('Test Example.csv', 'BBC Recipe Data.csv'))
 
 if __name__ == "__main__":
     unittest.main()

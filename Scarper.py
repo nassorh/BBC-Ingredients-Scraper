@@ -1,4 +1,3 @@
-from random import random
 from bs4 import BeautifulSoup
 import ssl
 from urllib.request import urlopen
@@ -6,6 +5,7 @@ import re
 import json
 import numpy as np
 from Exceptions import *
+import pandas as pd
 
 class BCCScraper():
     def __init__(self,URL):
@@ -41,12 +41,14 @@ class BCCScraper():
         diet = self.get_diet(reactInitialState)
         vegan = self.fetchDiet("vegan",diet)
         vegetarian = self.fetchDiet("vegetarian",diet)
-        return [title,totalTime,image,ingredients,rating_val,rating_count,category,cuisine,diet,vegan,vegetarian,self.url]
+        return [title,totalTime,image,ingredients,rating_val,rating_count,category,cuisine,diet,vegan,vegetarian,self.url.link]
 
     def get_title(self,reactInitialState):
         try:
             title = reactInitialState["recipeReducer"]["recipe"]["title"]
             return title
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -70,6 +72,8 @@ class BCCScraper():
         try:
             cookTime = int(self.jsonRecipes["cookTime"][2:4])
             return cookTime
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -78,6 +82,8 @@ class BCCScraper():
             self.update_jsonRecipes()
             prepTime = int(self.jsonRecipes["prepTime"][2:4])
             return prepTime
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -86,6 +92,8 @@ class BCCScraper():
             self.update_jsonRecipes()
             image = self.jsonRecipes["image"][0]
             return image
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
     
@@ -93,6 +101,8 @@ class BCCScraper():
         try:
             ingredients = ", ".join([ingredientText["text"] for ingredient in reactInitialState["recipeReducer"]["recipe"]["stagesWithoutLinks"] for ingredientText in ingredient["ingredients"]])
             return ingredients
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -101,6 +111,8 @@ class BCCScraper():
             self.update_jsonRecipes()
             rating_val = round(self.jsonRecipes["aggregateRating"]["ratingValue"])
             return rating_val
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -109,6 +121,8 @@ class BCCScraper():
             self.update_jsonRecipes()
             rating_count = self.jsonRecipes["aggregateRating"]["ratingCount"]
             return rating_count
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -117,6 +131,8 @@ class BCCScraper():
             self.update_jsonRecipes()
             category = self.jsonRecipes["recipeCategory"]
             return category
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
     
@@ -124,6 +140,10 @@ class BCCScraper():
         try:
             cuisine = reactInitialState["recipeReducer"]["recipe"]["cuisine"]["title"]
             return cuisine
+        except KeyError:
+            return np.nan
+        except TypeError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -131,6 +151,8 @@ class BCCScraper():
         try:
             diet = ", ".join([diet["title"] for diet in reactInitialState["recipeReducer"]["recipe"]["diets"]])
             return diet
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
 
@@ -142,6 +164,8 @@ class BCCScraper():
             script = script[0:-1] #Remove semi column at then 
             scriptJson = json.loads(script)
             return scriptJson
+        except KeyError:
+            return np.nan
         except TypeError:
             return np.nan
     
@@ -162,5 +186,40 @@ class BCCScraper():
             return True
         else:
             return False
+    
+
+
+    @classmethod
+    def create_excel_urlArray(cls,urls):
+        numpy_array = cls.scrape_urls(urls)
+        df = pd.DataFrame(numpy_array,columns=['title', 'total_time', 'image', 'ingredients', 'rating_val', 'rating_count',
+        'category', 'cuisine', 'diet', 'vegan', 'vegetarian', 'url'])
+        df.to_csv("BBC Recipe Data.csv",index=False)
+        return df
+
+    @classmethod
+    def scrape_urls(cls,urlArray):      
+        scrape_array = []
+
+        for url in urlArray:
+            scraper = cls.create_scraper(url)
             
+            if scraper:
+                numpy_array = np.array(scraper.collect_page_data())
+                scrape_array.append(numpy_array)
+            else:
+                print("Invalid URL:",scraper.url,"-Failed to create soup")
+
+        return np.array(scrape_array)
+
+    @staticmethod
+    def create_scraper(url):
+        scraper = BCCScraper(url)
+        scraper.update_soup()
+
+        if scraper.soup:
+            return scraper
+        else:
+            return None
+
     
