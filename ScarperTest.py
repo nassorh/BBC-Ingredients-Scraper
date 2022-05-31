@@ -56,7 +56,7 @@ class ScraperTest(unittest.TestCase):
 
     def test_get_rating_count(self):
         print("Test get rating count")
-        self.assertEqual(23,self.scarper.get_rating_count())
+        self.assertEqual(24,self.scarper.get_rating_count())
 
     def test_get_category(self):
         print("Test get category")
